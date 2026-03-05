@@ -11,7 +11,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import argparse
 import os
 from sklearn.multioutput import MultiOutputRegressor
-
+import matplotlib.pyplot as plt
 
 from xgboost import XGBRegressor
 
@@ -60,6 +60,46 @@ def build_model(args):
         raise ValueError("Model not supported")
     return MultiOutputRegressor(model)
 
+def draw_graph(y_test, y_pred, name_model):
+    # reset index so that x-axis of y_test and y_pred are aligned
+    y_test = y_test.reset_index(drop=True)
+
+    # get number of targets
+    n_targets = y_test.shape[1]
+
+    # create figure size depending on number of targets
+    plt.figure(figsize=(12, n_targets * 4))
+
+    # loop through each target
+    for i in range(n_targets):
+
+        # define subplot position (rows, columns, index)
+        plt.subplot(n_targets, 1, i + 1)
+
+        # plot actual vs predicted values
+        plt.plot(y_test.iloc[:, i], label="True Values")
+        plt.plot(y_pred[:, i], label="Predicted Values")
+
+        # set title for each target
+        plt.title(f"Target {i+1}")
+
+        # show legend
+        plt.legend()
+
+        # show grid for easier visualization
+        plt.grid(True)
+
+    # adjust layout to avoid overlapping
+    plt.tight_layout()
+
+    # save result image
+    path_result = os.path.join(config.result_image, f"all_target_{name_model}.png")
+    plt.savefig(path_result)
+
+    # display figure
+    plt.show()
+
+
 
 def main(args):
     #  retrieve data
@@ -93,26 +133,55 @@ def main(args):
     # predict
     y_pred = pipe.predict(x_test)
 
-
+    # show graph
+    draw_graph(y_test,y_pred,args.model_name)
 
     # evaluation
-    mae = mean_absolute_error(y_test, y_pred)
-    mse = mean_squared_error(y_test, y_pred)
-    r2 = r2_score(y_test, y_pred)
+    mae_sum = mean_absolute_error(y_test, y_pred)
+    mse_sum = mean_squared_error(y_test, y_pred)
+    r2_sum = r2_score(y_test, y_pred)
 
-    print("\nEvaluation")
-    print("MAE:", mae)
-    print("MSE:", mse)
-    print("R2 :", r2)
+    print("\nEvaluation per target")
+    results = []
+    for i in range(y_test.shape[1]):
+        mae = mean_absolute_error(y_test.iloc[:, i], y_pred[:, i])
+        mse = mean_squared_error(y_test.iloc[:, i], y_pred[:, i])
+        r2 = r2_score(y_test.iloc[:, i], y_pred[:, i])
+
+        print(f"\nTarget {i + 1}")
+        print("MAE:", mae)
+        print("MSE:", mse)
+        print("R2 :", r2)
+
+        results.append({
+            "target": f"target_{i + 1}",
+            "MAE": mae,
+            "MSE": mse,
+            "R2": r2
+        })
+    print("------------------------")
+    print("sum result :")
+    print("SUM MAE:", mae_sum)
+    print("SUM MSE:", mse_sum)
+    print("SUM R2 :", r2_sum)
 
     if not os.path.isdir(config.result_report_dir):
         os.makedirs(config.result_report_dir)
     path_result_report = os.path.join(config.result_report_dir,f"train_report_{args.model_name}.txt")
     with open(path_result_report, "w") as f:
-        f.write(f"Model: {args.model_name} \n")
-        f.write(f"MAE: {mae:.4f}\n")
-        f.write(f"MSE: {mse:.4f}\n")
-        f.write(f"R2 : {r2:.4f}\n")
+        f.write(f"Model: {args.model_name}\n\n")
+
+        for r in results:
+            f.write(f"{r['target']}\n")
+            f.write(f"MAE: {r['MAE']:.4f}\n")
+            f.write(f"MSE: {r['MSE']:.4f}\n")
+            f.write(f"R2 : {r['R2']:.4f}\n")
+            f.write("\n")
+        f.write("---------------------------\n")
+        f.write("sum result: \n")
+        f.write(f"SUM MAE: {mae_sum} \n" )
+        f.write(f"SUM MSE: {mse_sum} \n" )
+        f.write(f"SUM R2 : {r2_sum} \n" )
 
     if not os.path.isdir(config.model_dir):
         os.makedirs(config.model_dir)

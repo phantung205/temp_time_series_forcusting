@@ -21,6 +21,8 @@ report_dir = os.path.join(root_project,"reports")
 eda_report_dir = os.path.join(report_dir,"eda")
 # dir report result
 result_report_dir = os.path.join(report_dir,"result")
+# dir results image
+result_image = os.path.join(report_dir,"image_result")
 #file name report
 file_name_report = "repot_temperature.html"
 
