@@ -16,20 +16,18 @@ def create_ts_data(data,window_size = 5, target_size = config.ts):
 
 
 def clean_raw_data(df,is_train=True):
-    # create data time series forcasting
-    df = create_ts_data(df)
+    if "date" in df.columns:
+        # Convert data from data date time to time type
+        df["date"] = pd.to_datetime(df["date"], utc=True)
+        # Separate the necessary columns
+        df["month"] = df["date"].dt.month
+        # delete comlumn necessary
+        df = df.drop(columns=['date'])
 
-    # Convert data from data date time to time type
-    df["date"] = pd.to_datetime(df["date"], utc=True)
-
-    # Separate the necessary columns
-    df["month"] = df["date"].dt.month
-
-    # delete comlumn necessary
-    df = df.drop(columns=['date'])
-
-    # delete empty columns
-    df = df.dropna()
+    # drop NA only for training
+    if is_train:
+        df = create_ts_data(df)
+        df = df.dropna()
 
     # retain the necessary columns
     if is_train:
