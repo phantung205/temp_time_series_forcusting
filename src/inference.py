@@ -6,7 +6,7 @@ import pandas as pd
 def load_model(model_name):
     model_path = os.path.join(config.model_dir,f"{model_name}.joblib")
     if not os.path.isfile(model_path):
-        raise  FileExistsError(f"Model not found: {model_path}")
+        raise  FileNotFoundError(f"Model not found: {model_path}")
     return joblib.load(model_path)
 
 
@@ -23,7 +23,11 @@ def model_predict_dic(input_dic,model_name):
     #predict
     prediction = model.predict(df)
 
-    return prediction
+    result = {
+        f"day_{i + 1}": prediction[0][i]
+        for i in range(prediction.shape[1])
+    }
+    return result
 
 def model_predict_file(input_file,model_name):
     # load model
@@ -44,7 +48,7 @@ def model_predict_file(input_file,model_name):
         raise ValueError("Only CSV or Excel files are supported")
 
     #clear data
-    df = preprocessing.clean_raw_data(df, False)
+    df = preprocessing.clean_raw_data(df,False)
 
     # prediction
     prediction = model.predict(df)
@@ -70,6 +74,6 @@ if __name__ == '__main__':
     }
     result_dic = model_predict_dic(sample1,"XGBoost")
 
-    test_file = os.path.join(config.processed_data_dir, "x_test.csv")
+    test_file = os.path.join(config.data_dir, "raw", "DailyDelhiClimateTest.csv")
     df_result = model_predict_file(test_file, "XGBoost")
     print(df_result.head())

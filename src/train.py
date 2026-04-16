@@ -93,6 +93,7 @@ def draw_graph(y_test, y_pred, name_model):
     plt.tight_layout()
 
     # save result image
+    os.makedirs(config.result_image,exist_ok=True)
     path_result = os.path.join(config.result_image, f"all_target_{name_model}.png")
     plt.savefig(path_result)
 
